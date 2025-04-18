@@ -5,6 +5,8 @@ import path from "path";
 import { exec } from "child_process";
 import { GoogleGenAI, Modality } from "@google/genai";
 import dotenv from "dotenv";
+import googleTTS from 'google-tts-api'; // At the top of your file
+import fetch from 'node-fetch'; // Make sure you import this
 
 dotenv.config();
 const app = express();
@@ -60,18 +62,30 @@ app.post("/generate", async (req, res) => {
     if (voice) {
       const txtPath = `output/${safeName}_story.txt`;
       const mp3Path = `output/${safeName}_story.mp3`;
-
+    
       fs.writeFileSync(txtPath, story);
-
-      await new Promise((resolve, reject) => {
-        exec(`python generate_tts.py "${txtPath}" "${mp3Path}"`, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
+    
+      const urls = googleTTS.getAllAudioUrls(story, {
+        lang: 'en',
+        slow: false,
+        host: 'https://translate.google.com',
       });
-
+    
+      const audioBuffers = [];
+    
+      for (const part of urls) {
+        const res = await fetch(part.url);
+        const buffer = await res.arrayBuffer();
+        audioBuffers.push(Buffer.from(buffer));
+      }
+    
+      // Combine and write to a single MP3
+      const finalBuffer = Buffer.concat(audioBuffers);
+      fs.writeFileSync(mp3Path, finalBuffer);
+    
       output.voice = "/" + path.basename(mp3Path);
     }
+    
 
     // 💾 Save story text
     if (download) {
