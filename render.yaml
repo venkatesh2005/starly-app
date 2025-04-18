@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: starly-app
+    env: node
+    buildCommand: |
+      npm install
+      pip install -r requirements.txt
+    startCommand: node server.js
+    plan: free

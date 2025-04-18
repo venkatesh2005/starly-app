@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Starly 🌙 - AI Bedtime Story Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Comic Sans MS', cursive;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .background-image {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background-image: url('bg.png'); /* <-- Replace with your image URL */
+  background-size: cover;
+  background-repeat: no-repeat;
+  /* background-position: center center; */
+  background-attachment: fixed;
+}
+
+
+    .loader-stars {
+      width: 64px;
+      height: 64px;
+      border: 6px dotted #fff;
+      border-top: 6px solid #facc15;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .animate-fade-in {
+      animation: fade-in 0.3s ease-out;
+    }
+
+    .moon {
+      position: absolute;
+      top: 60px;
+      right: 60px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #ffffff, #e2e2e2);
+      box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.3);
+      z-index: -5;
+    }
+
+    .glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+
+
+  </style>
+</head>
+<body class="relative text-white min-h-screen flex flex-col items-center justify-center px-4 py-10">
+
+  <div class="background-image"></div>
+
+
+  <!-- 🌟 Form -->
+  <div class="glass-card p-6 max-w-xl w-full text-center z-10 backdrop-blur-md backdrop-saturate-150">
+    <h1 class="text-4xl font-bold text-yellow-300 mb-2 drop-shadow">🌙 Starly</h1>
+    <p class="text-white/80 mb-6">Create a magical bedtime story where your child is the hero!</p>
+  
+    <form id="storyForm" class="space-y-4 text-left text-white">
+      <input type="text" name="name" placeholder="🧒 Child's Name" required class="w-full bg-white/10 border border-white/20 p-2 rounded text-white placeholder-white/70 focus:outline-none" />
+      <input type="number" name="age" placeholder="🎂 Age" required class="w-full bg-white/10 border border-white/20 p-2 rounded text-white placeholder-white/70 focus:outline-none" />
+      <input type="text" name="characters" placeholder="🐉 Favorite Characters" class="w-full bg-white/10 border border-white/20 p-2 rounded text-white placeholder-white/70 focus:outline-none" />
+      <input type="text" name="theme" placeholder="🏰 Preferred Theme" class="w-full bg-white/10 border border-white/20 p-2 rounded text-white placeholder-white/70 focus:outline-none" />
+  
+      <div class="flex flex-wrap gap-4 text-sm mt-2">
+        <label><input type="checkbox" name="image" /> 🎨 Illustration</label>
+        <label><input type="checkbox" name="voice" /> 🔊 Narration</label>
+        <label><input type="checkbox" name="download" /> 💾 Download</label>
+      </div>
+  
+      <div class="text-center mt-4">
+        <button type="submit" class="bg-yellow-300 text-black px-6 py-2 rounded shadow hover:bg-yellow-200 transition">✨ Generate Story</button>
+      </div>
+    </form>
+  </div>
+  
+
+  <!-- 🎬 Modal -->
+<!-- 🎬 Modal with Glassmorphism -->
+<div id="modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50 hidden p-4">
+  <div class="glass-card backdrop-blur-lg text-white p-6 w-full max-w-2xl rounded-2xl shadow-xl animate-fade-in overflow-y-auto max-h-[90vh] relative">
+    <button onclick="closeModal()" class="absolute top-2 right-3 text-2xl text-white/70 hover:text-red-400 transition">&times;</button>
+    
+    <h2 class="text-2xl font-bold text-yellow-300 mb-4 text-center drop-shadow">🌟 Your Story</h2>
+    
+    <pre id="storyText" class="whitespace-pre-wrap text-white/90 mb-4 text-sm max-h-[40vh] overflow-y-auto border border-white/10 p-3 rounded-lg bg-white/5"></pre>
+    
+    <img id="storyImage" class="hidden rounded-lg mb-4 mx-auto max-w-full border border-white/20 shadow" />
+    
+    <div class="text-center">
+      <a id="imageLink" target="_blank"
+         class="hidden inline-block bg-white/10 text-blue-200 px-4 py-2 rounded-lg border border-blue-300 hover:bg-blue-500/20 transition mb-3"
+      >🔍 View Full Illustration</a>
+
+      <audio id="storyAudio" controls class="hidden w-full mb-4 rounded-lg bg-white/10 border border-white/20"></audio>
+
+      <a id="downloadLink"
+         class="hidden inline-block bg-white/10 text-green-200 px-4 py-2 rounded-lg border border-green-300 hover:bg-green-500/20 transition"
+         download
+      >📥 Download Story</a>
+    </div>
+  </div>
+</div>
+
+  <!-- ⏳ Loader -->
+  <div id="loader" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center">
+    <div class="flex flex-col items-center gap-4 text-white">
+      <div class="loader-stars"></div>
+      <p class="text-xl font-semibold text-center">Crafting your magical story... ✨</p>
+    </div>
+  </div>
+
+  <script>
+    function closeModal() {
+      document.getElementById("modal").classList.add("hidden");
+    }
+
+    document.getElementById("storyForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const loader = document.getElementById("loader");
+      const btn = e.target.querySelector("button");
+
+      loader.classList.remove("hidden");
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/generate", { method: "POST", body: form });
+        const data = await res.json();
+
+        document.getElementById("storyText").textContent = data.story;
+        document.getElementById("modal").classList.remove("hidden");
+
+        const img = document.getElementById("storyImage");
+        const link = document.getElementById("imageLink");
+        const audio = document.getElementById("storyAudio");
+        const downloadLink = document.getElementById("downloadLink");
+
+        if (data.image) {
+          img.src = data.image;
+          img.classList.remove("hidden");
+          link.href = data.image;
+          link.classList.remove("hidden");
+        } else {
+          img.classList.add("hidden");
+          link.classList.add("hidden");
+        }
+
+        if (data.voice) {
+          audio.src = data.voice;
+          audio.classList.remove("hidden");
+        } else {
+          audio.classList.add("hidden");
+        }
+
+        if (data.download) {
+          downloadLink.href = data.download;
+          downloadLink.classList.remove("hidden");
+        } else {
+          downloadLink.classList.add("hidden");
+        }
+      } catch (err) {
+        alert("Oops! Something went wrong.");
+      }
+
+      loader.classList.add("hidden");
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
